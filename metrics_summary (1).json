@@ -1,0 +1,46 @@
+{
+  "performance": {
+    "auto_decided": {
+      "n_cases": 1136,
+      "counts": {
+        "tp": 398,
+        "fp": 84,
+        "tn": 600,
+        "fn": 54
+      },
+      "precision": 0.8257261410788381,
+      "recall": 0.8805309734513275,
+      "f1": 0.8522483940042827
+    },
+    "full_funnel_flagged": {
+      "n_cases": 1200,
+      "counts": {
+        "tp": 411,
+        "fp": 135,
+        "tn": 600,
+        "fn": 54
+      },
+      "precision": 0.7527472527472527,
+      "recall": 0.8838709677419355,
+      "f1": 0.8130563798219584
+    },
+    "manual_review": {
+      "n_cases": 64,
+      "pct_of_total": 0.05333333333333334,
+      "fraud_rate_within_review": 0.203125
+    }
+  },
+  "false_positive_cost": {
+    "n_false_positive": 84,
+    "n_false_negative": 54,
+    "n_manual_review": 64,
+    "cost_false_positive_inr": 100800.0,
+    "cost_false_negative_inr": 322898.1,
+    "cost_manual_review_inr": 2880.0,
+    "total_estimated_cost_inr": 426578.1,
+    "assumptions": {
+      "avg_customer_ltv_impact_inr_per_fp": 1200.0,
+      "review_labor_cost_inr_per_case": 45.0
+    }
+  }
+}
