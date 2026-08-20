@@ -1,37 +1,1276 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Aegis — Chargeback Case Manager</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aegis — Multi-Agent Chargeback Case Manager</title>
+
+    <!-- Google Fonts for better typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet" />
+
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #0C0E16; color: white; }
-        .badge { display: inline-block; padding: 5px 10px; background: #FF6F00; border-radius: 5px; margin: 5px; }
-        h1 { font-size: 2.5em; }
-        .metric { display: inline-block; margin: 10px; padding: 15px; background: #1a1a2e; border-radius: 10px; text-align: center; min-width: 120px; }
-        .metric-value { font-size: 2em; font-weight: bold; color: #FF6F00; }
-        .container { text-align: center; }
-        a { color: #FF6F00; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        /* ---------------------------------------------------------------------- */
+        /* CSS Variables (Design Tokens)                                         */
+        /* ---------------------------------------------------------------------- */
+        :root {
+            --ink: #0E1116;
+            --surface: #161A21;
+            --surface-raised: #1C212A;
+            --hair: #2A3040;
+            --hair-strong: #394054;
+            --text-pri: #E9EBF1;
+            --text-sec: #9098AC;
+            --text-mute: #5C6376;
+            --amber: #D9861F;
+            --amber-dim: #8A611E;
+            --teal: #3FA48B;
+            --teal-dim: #2C6E5E;
+            --mustard: #C9A227;
+            --mustard-dim: #8A7020;
+            --brick: #C1453C;
+            --brick-dim: #7D2E29;
+            --wire: #5A85B0;
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Reset & Base Styles                                                   */
+        /* ---------------------------------------------------------------------- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--ink);
+            color: var(--text-pri);
+            padding: 28px 24px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            border: 1px solid var(--hair);
+            border-radius: 14px;
+            padding: 28px 24px;
+            background: var(--ink);
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Typography                                                             */
+        /* ---------------------------------------------------------------------- */
+        .font-mono {
+            font-family: 'IBM Plex Mono', 'SF Mono', ui-monospace, monospace;
+        }
+        .font-display {
+            font-family: 'Space Grotesk', 'Arial Narrow', sans-serif;
+        }
+
+        .text-amber {
+            color: var(--amber);
+        }
+        .text-mute {
+            color: var(--text-mute);
+        }
+        .text-sec {
+            color: var(--text-sec);
+        }
+        .text-teal {
+            color: var(--teal);
+        }
+        .text-brick {
+            color: var(--brick);
+        }
+        .text-mustard {
+            color: var(--mustard);
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Header                                                                 */
+        /* ---------------------------------------------------------------------- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 1px solid var(--hair);
+            padding-bottom: 18px;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header-left .label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            color: var(--amber);
+            margin-bottom: 6px;
+        }
+        .header-left .title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 26px;
+            letter-spacing: -0.01em;
+        }
+
+        .header-right {
+            text-align: right;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--text-mute);
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Badges                                                                 */
+        /* ---------------------------------------------------------------------- */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 3px;
+            background: var(--amber);
+            color: #1A1206;
+            border: 1px solid var(--amber);
+            margin: 3px;
+        }
+        .badge-secondary {
+            background: transparent;
+            color: var(--text-sec);
+            border-color: var(--hair-strong);
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Funnel Strip                                                           */
+        /* ---------------------------------------------------------------------- */
+        .funnel {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            flex-wrap: wrap;
+        }
+        .funnel-step {
+            flex: 1;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--hair);
+            background: var(--surface);
+            min-width: 100px;
+        }
+        .funnel-step.highlight {
+            border-color: var(--amber);
+            background: rgba(217, 134, 31, 0.08);
+        }
+        .funnel-step .label {
+            color: var(--text-mute);
+            font-size: 10px;
+        }
+        .funnel-step .value {
+            font-size: 13px;
+            margin-top: 2px;
+        }
+        .funnel-arrow {
+            color: var(--hair-strong);
+            font-size: 18px;
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Two-Column Layout                                                      */
+        /* ---------------------------------------------------------------------- */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 20px;
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Case Cards                                                             */
+        /* ---------------------------------------------------------------------- */
+        .case-card {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--hair);
+            background: var(--surface);
+            cursor: pointer;
+            transition: border-color 0.15s;
+            margin-bottom: 8px;
+        }
+        .case-card:hover {
+            border-color: var(--hair-strong);
+        }
+        .case-card.active {
+            border-color: var(--amber);
+            background: #241C11;
+        }
+        .case-card .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .case-card .id {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--text-pri);
+        }
+        .case-card .score {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+        }
+        .case-card .tag {
+            font-size: 12px;
+            color: var(--text-sec);
+            margin-top: 3px;
+        }
+        .case-card .detail {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--text-mute);
+            margin-top: 2px;
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Buttons                                                                */
+        /* ---------------------------------------------------------------------- */
+        .btn {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.04em;
+            color: #1A1206;
+            background: var(--amber);
+            border: none;
+            border-radius: 6px;
+            padding: 9px 16px;
+            cursor: pointer;
+            transition: filter 0.2s, transform 0.1s;
+        }
+        .btn:hover {
+            filter: brightness(1.12);
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: default;
+            filter: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-sec);
+            border: 1px solid var(--hair-strong);
+        }
+        .btn-secondary:hover {
+            background: var(--surface-raised);
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Audit Log                                                              */
+        /* ---------------------------------------------------------------------- */
+        .audit-log {
+            background: var(--surface);
+            border: 1px solid var(--hair);
+            border-radius: 8px;
+            padding: 14px;
+            min-height: 160px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+        .audit-entry {
+            display: flex;
+            gap: 10px;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--hair);
+        }
+        .audit-entry .agent {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            min-width: 92px;
+            text-align: right;
+            padding-top: 1px;
+        }
+        .audit-entry .agent.investigator {
+            color: var(--wire);
+        }
+        .audit-entry .agent.analyzer {
+            color: var(--amber);
+        }
+        .audit-entry .agent.manager {
+            color: var(--text-mute);
+        }
+        .audit-entry .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+        .audit-entry .dot.flag {
+            background: var(--mustard);
+        }
+        .audit-entry .dot.decision {
+            background: var(--amber);
+        }
+        .audit-entry .dot.info {
+            background: var(--hair-strong);
+        }
+        .audit-entry .message {
+            font-size: 12.5px;
+            line-height: 1.5;
+        }
+        .audit-entry .message .action {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--text-sec);
+        }
+        .audit-entry .message .text {
+            color: var(--text-pri);
+        }
+
+        .audit-empty {
+            font-size: 13px;
+            color: var(--text-mute);
+            font-style: italic;
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Verdict Stamp                                                          */
+        /* ---------------------------------------------------------------------- */
+        .verdict-stamp {
+            border-radius: 8px;
+            padding: 10px 16px;
+            transform: rotate(-8deg);
+            flex-shrink: 0;
+            border: 3px solid var(--text-sec);
+        }
+        .verdict-stamp .label {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 15px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .verdict-stamp .risk {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--text-sec);
+            margin-top: 2px;
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Metrics Dashboard                                                      */
+        /* ---------------------------------------------------------------------- */
+        .dashboard-tabs {
+            display: flex;
+            gap: 18px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid var(--hair);
+            padding-bottom: 8px;
+        }
+        .tab {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-mute);
+            padding-bottom: 8px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .tab.active {
+            color: var(--amber);
+            border-bottom-color: var(--amber);
+        }
+        .tab:hover {
+            color: var(--text-sec);
+        }
+
+        .stat-grid {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .stat-card {
+            flex: 1;
+            min-width: 120px;
+            background: var(--surface);
+            border: 1px solid var(--hair);
+            border-radius: 8px;
+            padding: 14px 16px;
+        }
+        .stat-card .label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--text-mute);
+            letter-spacing: 0.05em;
+        }
+        .stat-card .value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 24px;
+            margin-top: 4px;
+        }
+        .stat-card .sub {
+            font-size: 11px;
+            color: var(--text-sec);
+            margin-top: 3px;
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Confusion Matrix                                                       */
+        /* ---------------------------------------------------------------------- */
+        .confusion-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            flex: 1;
+        }
+        .confusion-cell {
+            border-radius: 6px;
+            padding: 12px 10px;
+            text-align: center;
+        }
+        .confusion-cell .number {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 20px;
+        }
+        .confusion-cell .label {
+            font-size: 10px;
+            margin-top: 2px;
+        }
+        .confusion-cell.tn {
+            background: rgba(63, 164, 139, 0.13);
+            color: var(--teal);
+        }
+        .confusion-cell.fp {
+            background: rgba(193, 69, 60, 0.13);
+            color: var(--brick);
+        }
+        .confusion-cell.fn {
+            background: rgba(193, 69, 60, 0.13);
+            color: var(--brick);
+        }
+        .confusion-cell.tp {
+            background: rgba(63, 164, 139, 0.13);
+            color: var(--teal);
+        }
+
+        .confusion-wrapper {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .confusion-wrapper .confusion-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Chart (CSS-only bar chart)                                            */
+        /* ---------------------------------------------------------------------- */
+        .bar-chart {
+            margin: 12px 0;
+        }
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+        .bar-row .bar-label {
+            min-width: 120px;
+            font-size: 12px;
+            color: var(--text-sec);
+        }
+        .bar-row .bar-track {
+            flex: 1;
+            height: 20px;
+            background: var(--surface-raised);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .bar-row .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+        .bar-row .bar-value {
+            min-width: 80px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--text-sec);
+            text-align: right;
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Cost Note                                                              */
+        /* ---------------------------------------------------------------------- */
+        .cost-note {
+            font-size: 11.5px;
+            color: var(--text-sec);
+            margin-top: 10px;
+        }
+        .cost-note .dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            margin-right: 6px;
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Responsive                                                             */
+        /* ---------------------------------------------------------------------- */
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .header-right {
+                text-align: left;
+            }
+            .funnel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .funnel-arrow {
+                transform: rotate(90deg);
+                text-align: center;
+            }
+            .stat-grid {
+                flex-direction: column;
+            }
+            .confusion-wrapper {
+                flex-direction: column;
+            }
+            .verdict-stamp {
+                transform: none;
+            }
+            .dashboard-tabs {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🛡️ Aegis — Multi-Agent Chargeback Case Manager</h1>
-        <p>
-            <span class="badge">Track 02 — AI Risk Manager</span>
-            <span class="badge">Razorpay Buildathon</span>
-        </p>
-        
-        <h2>📊 Performance Metrics</h2>
-        <div class="metric"><div class="metric-value">82.6%</div>Precision</div>
-        <div class="metric"><div class="metric-value">88.1%</div>Recall</div>
-        <div class="metric"><div class="metric-value">85.2%</div>F1 Score</div>
-        
-        <h2>🔗 Links</h2>
-        <p><a href="https://github.com/MOHAN-6/chargeback-case-manager">📂 GitHub Repository</a></p>
-        <p><a href="https://youtu.be/YOUR_VIDEO_LINK">🎥 Demo Video</a></p>
-        
-        <h2>🏗️ Architecture</h2>
-        <p>InvestigatorAgent → Evidence Dossier → AnalyzerAgent → Decision</p>
+        <!-- ================================================================== -->
+        <!-- HEADER                                                              -->
+        <!-- ================================================================== -->
+        <header class="header">
+            <div class="header-left">
+                <div class="label">AEGIS · CASE MANAGER</div>
+                <div class="title">Chargeback investigation console</div>
+            </div>
+            <div class="header-right">
+                <div>1,200 cases evaluated offline</div>
+                <div>Track 02 — AI Risk Manager</div>
+            </div>
+        </header>
+
+        <!-- ================================================================== -->
+        <!-- BADGES                                                              -->
+        <!-- ================================================================== -->
+        <div style="margin-bottom: 16px;">
+            <span class="badge">🧠 Track 02 — AI Risk Manager</span>
+            <span class="badge badge-secondary">⚡ Razorpay Buildathon</span>
+            <span class="badge badge-secondary">🛡️ Defense-Only</span>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- FUNNEL STRIP                                                        -->
+        <!-- ================================================================== -->
+        <div class="funnel">
+            <div class="funnel-step">
+                <div class="label">Disputes filed</div>
+                <div class="value" style="color: var(--text-sec);">1,200</div>
+            </div>
+            <span class="funnel-arrow">→</span>
+            <div class="funnel-step">
+                <div class="label">Tier-1 rules engine (instant)</div>
+                <div class="value" style="color: var(--wire);">auto-clears 94.7%</div>
+            </div>
+            <span class="funnel-arrow">→</span>
+            <div class="funnel-step highlight">
+                <div class="label">Tier-2 agents (this console)</div>
+                <div class="value" style="color: var(--amber);">ambiguous / high-value</div>
+            </div>
+            <span class="funnel-arrow">→</span>
+            <div class="funnel-step">
+                <div class="label">Human review</div>
+                <div class="value" style="color: var(--mustard);">5.3% of total</div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- MAIN CONTENT                                                        -->
+        <!-- ================================================================== -->
+        <div class="grid-2">
+            <!-- LEFT: Case Selector -->
+            <div>
+                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: var(--text-mute); margin-bottom: 10px;">
+                    SAMPLE CASES
+                </div>
+                <div id="caseList"></div>
+
+                <!-- TIER-1 READOUT -->
+                <div id="tier1Readout" style="margin-top: 16px; padding: 12px; border-radius: 8px; background: var(--surface); border: 1px solid var(--hair);">
+                    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-mute); margin-bottom: 6px;">TIER-1 SCORE (INSTANT)</div>
+                    <div id="tier1Score" style="font-family: 'IBM Plex Mono', monospace; font-size: 20px; color: var(--text-sec);">—</div>
+                    <div id="tier1Decision" style="font-size: 12px; color: var(--text-sec); margin-top: 2px;">Select a case</div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Investigation Panel -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <div id="selectedTitle" style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 17px;">Select a case</div>
+                        <div id="selectedSub" style="font-size: 12px; color: var(--text-sec); margin-top: 2px;">—</div>
+                    </div>
+                    <button id="runBtn" class="btn" disabled>RUN AGENT INVESTIGATION</button>
+                </div>
+
+                <!-- Audit Log -->
+                <div id="auditLog" class="audit-log">
+                    <div class="audit-empty">No investigation run yet. Select a case and click "Run agent investigation" to see live reasoning.</div>
+                </div>
+
+                <!-- Error -->
+                <div id="errorMsg" style="margin-top: 10px; font-size: 12.5px; color: var(--brick); font-family: 'IBM Plex Mono', monospace; display: none;"></div>
+
+                <!-- Verdict -->
+                <div id="verdictContainer" style="margin-top: 18px; display: none;">
+                    <div style="display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
+                        <div id="verdictStamp" class="verdict-stamp">
+                            <div id="verdictLabel" class="label">—</div>
+                            <div id="verdictRisk" class="risk">risk —</div>
+                        </div>
+                        <div style="flex: 1;">
+                            <div id="verdictReasoning" style="font-size: 13px; line-height: 1.6; color: var(--text-pri); margin-bottom: 8px;"></div>
+                            <div id="verdictFactors" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;"></div>
+                            <button id="revealBtn" class="btn btn-secondary" style="font-size: 11px; padding: 6px 12px;">REVEAL GROUND TRUTH</button>
+                            <div id="groundTruth" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; margin-top: 8px; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- METRICS DASHBOARD                                                   -->
+        <!-- ================================================================== -->
+        <div style="margin-top: 32px; border-top: 1px solid var(--hair); padding-top: 22px;">
+            <div class="dashboard-tabs">
+                <div class="tab active" data-tab="performance">Performance</div>
+                <div class="tab" data-tab="cost">Cost analysis</div>
+                <div class="tab" data-tab="threshold">Threshold tuning</div>
+            </div>
+
+            <!-- Tab: Performance -->
+            <div id="tab-performance">
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="label">PRECISION (AUTO-DECIDED)</div>
+                        <div class="value" style="color: var(--amber);">0.826</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">RECALL (AUTO-DECIDED)</div>
+                        <div class="value" style="color: var(--amber);">0.881</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">F1 (AUTO-DECIDED)</div>
+                        <div class="value" style="color: var(--amber);">0.852</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">MANUAL REVIEW LOAD</div>
+                        <div class="value" style="color: var(--mustard);">5.3%</div>
+                        <div class="sub">20.3% fraud rate within reviewed</div>
+                    </div>
+                </div>
+
+                <div class="confusion-wrapper">
+                    <div class="confusion-box">
+                        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-mute); margin-bottom: 8px;">AUTO-DECIDED ONLY · n=1,136</div>
+                        <div class="confusion-grid">
+                            <div class="confusion-cell tn"><div class="number">600</div><div class="label">true negative</div></div>
+                            <div class="confusion-cell fp"><div class="number">84</div><div class="label">false positive</div></div>
+                            <div class="confusion-cell fn"><div class="number">54</div><div class="label">false negative</div></div>
+                            <div class="confusion-cell tp"><div class="number">398</div><div class="label">true positive</div></div>
+                        </div>
+                    </div>
+                    <div class="confusion-box">
+                        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-mute); margin-bottom: 8px;">FULL FUNNEL (REVIEW = FLAGGED) · n=1,200</div>
+                        <div class="confusion-grid">
+                            <div class="confusion-cell tn"><div class="number">600</div><div class="label">true negative</div></div>
+                            <div class="confusion-cell fp"><div class="number">135</div><div class="label">false positive</div></div>
+                            <div class="confusion-cell fn"><div class="number">54</div><div class="label">false negative</div></div>
+                            <div class="confusion-cell tp"><div class="number">411</div><div class="label">true positive</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 12px; color: var(--text-sec); margin-top: 14px; line-height: 1.6;">
+                    Auto-decided view excludes the 5.3% of cases escalated to a human, and answers "how good is the system when it commits to a call."
+                    Full-funnel view treats manual review as a positive flag and answers "how much genuine fraud gets zero human eyes on it."
+                </div>
+            </div>
+
+            <!-- Tab: Cost -->
+            <div id="tab-cost" style="display: none;">
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="label">TOTAL ESTIMATED COST</div>
+                        <div class="value" style="color: var(--amber);">₹4,26,578</div>
+                        <div class="sub">on 1,200 cases in the evaluation set</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">FALSE-POSITIVE COST</div>
+                        <div class="value" style="color: var(--brick);">₹1,00,800</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">FALSE-NEGATIVE COST</div>
+                        <div class="value" style="color: var(--brick);">₹3,22,898</div>
+                    </div>
+                </div>
+
+                <div class="bar-chart">
+                    <div class="bar-row">
+                        <span class="bar-label">False positives</span>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width: 24%; background: var(--brick);"></div>
+                        </div>
+                        <span class="bar-value">₹1,00,800</span>
+                    </div>
+                    <div class="bar-row">
+                        <span class="bar-label">False negatives</span>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width: 76%; background: var(--brick);"></div>
+                        </div>
+                        <span class="bar-value">₹3,22,898</span>
+                    </div>
+                    <div class="bar-row">
+                        <span class="bar-label">Manual review</span>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width: 1%; background: var(--mustard);"></div>
+                        </div>
+                        <span class="bar-value">₹2,880</span>
+                    </div>
+                </div>
+
+                <div class="cost-note">
+                    <div><span class="dot" style="background: var(--brick);"></span> 84 false positives · ₹1,200 assumed goodwill/LTV impact each</div>
+                    <div><span class="dot" style="background: var(--brick);"></span> 54 false negatives · priced at actual disputed transaction amount</div>
+                    <div><span class="dot" style="background: var(--mustard);"></span> 64 cases escalated · ₹45 assumed analyst-minutes cost each</div>
+                </div>
+            </div>
+
+            <!-- Tab: Threshold -->
+            <div id="tab-threshold" style="display: none;">
+                <div style="font-size: 12px; color: var(--text-sec); margin-bottom: 12px; line-height: 1.6;">
+                    Sweeping a single hard threshold across the Tier-1 risk score (instead of the three-way decline / review / approve policy) shows where precision and recall trade off — this justifies why 0.40 and 0.70 were chosen as the two operating thresholds.
+                </div>
+                <div style="height: 200px; position: relative; padding: 10px 0;">
+                    <!-- Simple inline chart using divs -->
+                    <div style="display: flex; align-items: flex-end; height: 160px; gap: 6px; padding: 0 10px;">
+                        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
+                            <div style="height: 120px; width: 100%; background: var(--surface-raised); border-radius: 4px; position:relative; overflow:hidden;">
+                                <div style="position:absolute; bottom:0; left:0; width:100%; height: 120px; background: linear-gradient(to top, rgba(217,134,31,0.3), transparent);"></div>
+                                <div style="position:absolute; bottom:0; left:0; width:16%; height: 68px; background: var(--amber); border-radius: 2px 2px 0 0;"></div>
+                                <div style="position:absolute; bottom:0; left:20%; width:16%; height: 95px; background: var(--wire); border-radius: 2px 2px 0 0;"></div>
+                                <div style="position:absolute; bottom:0; left:40%; width:16%; height: 95px; background: var(--wire); border-radius: 2px 2px 0 0;"></div>
+                                <div style="position:absolute; bottom:0; left:60%; width:16%; height: 95px; background: var(--wire); border-radius: 2px 2px 0 0;"></div>
+                                <div style="position:absolute; bottom:0; left:80%; width:16%; height: 82px; background: var(--teal); border-radius: 2px 2px 0 0;"></div>
+                            </div>
+                            <div style="display:flex; width:100%; justify-content:space-between; font-size:10px; color:var(--text-mute);">
+                                <span>0.3</span><span>0.4</span><span>0.5</span><span>0.7</span><span>0.8</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:center; gap:20px; margin-top:8px; font-size:11px; color:var(--text-sec);">
+                        <span><span style="color:var(--amber);">●</span> Precision</span>
+                        <span><span style="color:var(--wire);">●</span> Recall</span>
+                        <span><span style="color:var(--teal);">●</span> F1</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- FOOTER                                                               -->
+        <!-- ================================================================== -->
+        <footer style="margin-top: 32px; border-top: 1px solid var(--hair); padding-top: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-mute);">
+                Built for Razorpay Buildathon · Track 02 — AI Risk Manager
+            </div>
+            <div>
+                <a href="https://github.com/MOHAN-6/chargeback-case-manager" target="_blank" style="color: var(--amber); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 12px; margin-left: 16px;">
+                    📂 GitHub
+                </a>
+                <a href="#" id="videoLink" style="color: var(--amber); text-decoration: none; font-family: 'IBM Plex Mono', monospace; font-size: 12px; margin-left: 16px;">
+                    🎥 Demo Video
+                </a>
+            </div>
+        </footer>
     </div>
+
+    <!-- ================================================================== -->
+    <!-- JAVASCRIPT                                                          -->
+    <!-- ================================================================== -->
+    <script>
+        (function() {
+            'use strict';
+
+            // ------------------------------------------------------------------
+            // DATA
+            // ------------------------------------------------------------------
+            const CASES = [{
+                case_id: "CB-100000",
+                tag: "Classic pattern",
+                merchant_category: "electronics",
+                amount_inr: 26861.10,
+                customer_account_age_days: 56,
+                merchant_velocity_1h: 16,
+                geo_mismatch_km: 230.4,
+                new_device: true,
+                ip_risk_score: 0.792,
+                prior_chargebacks_180d: 0,
+                session_to_checkout_min: 1.23,
+                saved_card_age_days: 4,
+                is_fraud: true,
+            }, {
+                case_id: "CB-100017",
+                tag: "Serial disputer",
+                merchant_category: "fashion",
+                amount_inr: 7270.60,
+                customer_account_age_days: 490,
+                merchant_velocity_1h: 4,
+                geo_mismatch_km: 3.6,
+                new_device: false,
+                ip_risk_score: 0.217,
+                prior_chargebacks_180d: 3,
+                session_to_checkout_min: 3.1,
+                saved_card_age_days: 86,
+                is_fraud: false,
+            }, {
+                case_id: "CB-100055",
+                tag: "Evasive pattern",
+                merchant_category: "food_delivery",
+                amount_inr: 4618.62,
+                customer_account_age_days: 9,
+                merchant_velocity_1h: 0,
+                geo_mismatch_km: 134.5,
+                new_device: false,
+                ip_risk_score: 0.254,
+                prior_chargebacks_180d: 0,
+                session_to_checkout_min: 12.68,
+                saved_card_age_days: 3,
+                is_fraud: true,
+            }, {
+                case_id: "CB-100043",
+                tag: "Traveling customer",
+                merchant_category: "fashion",
+                amount_inr: 2925.88,
+                customer_account_age_days: 238,
+                merchant_velocity_1h: 12,
+                geo_mismatch_km: 731.3,
+                new_device: false,
+                ip_risk_score: 0.69,
+                prior_chargebacks_180d: 1,
+                session_to_checkout_min: 4.83,
+                saved_card_age_days: 2,
+                is_fraud: false,
+            }, {
+                case_id: "CB-100104",
+                tag: "Borderline",
+                merchant_category: "electronics",
+                amount_inr: 1765.49,
+                customer_account_age_days: 44,
+                merchant_velocity_1h: 6,
+                geo_mismatch_km: 133.2,
+                new_device: false,
+                ip_risk_score: 0.603,
+                prior_chargebacks_180d: 0,
+                session_to_checkout_min: 1.86,
+                saved_card_age_days: 30,
+                is_fraud: true,
+            }, {
+                case_id: "CB-100036",
+                tag: "Borderline",
+                merchant_category: "travel",
+                amount_inr: 2399.27,
+                customer_account_age_days: 389,
+                merchant_velocity_1h: 6,
+                geo_mismatch_km: 50.6,
+                new_device: false,
+                ip_risk_score: 0.649,
+                prior_chargebacks_180d: 0,
+                session_to_checkout_min: 12.0,
+                saved_card_age_days: 64,
+                is_fraud: false,
+            }, ];
+
+            // Tier-1 weights (mirrors the offline-evaluated model)
+            const TIER1_WEIGHTS = { bias: -0.65, velocity: 1.35, geo: 1.55, deviceIp: 1.75, history: -1.60,
+            behavioural: 1.20 };
+
+            function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+            function tier1Score(c) {
+                const velocity_flag = c.merchant_velocity_1h >= 6;
+                const geo_flag = c.geo_mismatch_km >= 150;
+                const device_ip_flag = c.new_device && c.ip_risk_score >= 0.5;
+                const history_flag = c.prior_chargebacks_180d >= 2;
+                const behavioural_flag = c.session_to_checkout_min <= 1.0 && c.saved_card_age_days <= 30;
+                const logit = TIER1_WEIGHTS.bias +
+                    (velocity_flag ? TIER1_WEIGHTS.velocity : 0) +
+                    (geo_flag ? TIER1_WEIGHTS.geo : 0) +
+                    (device_ip_flag ? TIER1_WEIGHTS.deviceIp : 0) +
+                    (history_flag ? TIER1_WEIGHTS.history : 0) +
+                    (behavioural_flag ? TIER1_WEIGHTS.behavioural : 0);
+                const score = sigmoid(logit);
+                const decision = score >= 0.70 ? "FRAUD_CONFIRMED" : score >= 0.40 ? "MANUAL_REVIEW" :
+                "LEGITIMATE_DISPUTE";
+                return { score, decision, flags: { velocity_flag, geo_flag, device_ip_flag, history_flag,
+                    behavioural_flag } };
+            }
+
+            function decisionColor(decision) {
+                if (decision === "FRAUD_CONFIRMED") return "#C1453C";
+                if (decision === "MANUAL_REVIEW") return "#C9A227";
+                return "#3FA48B";
+            }
+
+            function decisionLabel(decision) {
+                if (decision === "FRAUD_CONFIRMED") return "Fraud confirmed";
+                if (decision === "MANUAL_REVIEW") return "Manual review";
+                return "Legitimate dispute";
+            }
+
+            // ------------------------------------------------------------------
+            // STATE
+            // ------------------------------------------------------------------
+            let selectedId = CASES[0].case_id;
+            let selected = CASES[0];
+            let status = 'idle'; // idle | running | done
+            let logEntries = [];
+            let verdict = null;
+            let revealed = false;
+
+            // ------------------------------------------------------------------
+            // DOM REFS
+            // ------------------------------------------------------------------
+            const caseListEl = document.getElementById('caseList');
+            const tier1ScoreEl = document.getElementById('tier1Score');
+            const tier1DecisionEl = document.getElementById('tier1Decision');
+            const selectedTitleEl = document.getElementById('selectedTitle');
+            const selectedSubEl = document.getElementById('selectedSub');
+            const runBtn = document.getElementById('runBtn');
+            const auditLogEl = document.getElementById('auditLog');
+            const errorMsgEl = document.getElementById('errorMsg');
+            const verdictContainer = document.getElementById('verdictContainer');
+            const verdictLabel = document.getElementById('verdictLabel');
+            const verdictRisk = document.getElementById('verdictRisk');
+            const verdictReasoning = document.getElementById('verdictReasoning');
+            const verdictFactors = document.getElementById('verdictFactors');
+            const revealBtn = document.getElementById('revealBtn');
+            const groundTruthEl = document.getElementById('groundTruth');
+            const videoLink = document.getElementById('videoLink');
+
+            // ------------------------------------------------------------------
+            // RENDER FUNCTIONS
+            // ------------------------------------------------------------------
+            function renderCaseList() {
+                caseListEl.innerHTML = '';
+                CASES.forEach(c => {
+                    const t1 = tier1Score(c);
+                    const active = c.case_id === selectedId;
+                    const div = document.createElement('div');
+                    div.className = `case-card ${active ? 'active' : ''}`;
+                    div.innerHTML = `
+                        <div class="top">
+                            <span class="id">${c.case_id}</span>
+                            <span class="score" style="color:${decisionColor(t1.decision)}">${t1.score.toFixed(2)}</span>
+                        </div>
+                        <div class="tag">${c.tag}</div>
+                        <div class="detail">₹${c.amount_inr.toLocaleString('en-IN')} · ${c.merchant_category}</div>
+                    `;
+                    div.addEventListener('click', () => selectCase(c.case_id));
+                    caseListEl.appendChild(div);
+                });
+            }
+
+            function selectCase(id) {
+                selectedId = id;
+                selected = CASES.find(c => c.case_id === id);
+                if (!selected) return;
+                // Reset state
+                status = 'idle';
+                logEntries = [];
+                verdict = null;
+                revealed = false;
+                errorMsgEl.style.display = 'none';
+                verdictContainer.style.display = 'none';
+                renderCaseList();
+                updateTier1();
+                updateSelectedInfo();
+                updateAuditLog();
+                updateButtons();
+            }
+
+            function updateTier1() {
+                const t1 = tier1Score(selected);
+                tier1ScoreEl.textContent = t1.score.toFixed(3);
+                tier1ScoreEl.style.color = decisionColor(t1.decision);
+                tier1DecisionEl.textContent = decisionLabel(t1.decision);
+                tier1DecisionEl.style.color = decisionColor(t1.decision);
+            }
+
+            function updateSelectedInfo() {
+                selectedTitleEl.textContent = selected.case_id;
+                selectedSubEl.textContent = `${selected.merchant_category} · ₹${selected.amount_inr.toLocaleString('en-IN')} · account age ${selected.customer_account_age_days}d`;
+            }
+
+            function updateButtons() {
+                runBtn.disabled = status === 'running';
+                runBtn.textContent = status === 'running' ? 'INVESTIGATING…' : 'RUN AGENT INVESTIGATION';
+            }
+
+            function updateAuditLog() {
+                if (logEntries.length === 0) {
+                    auditLogEl.innerHTML = `<div class="audit-empty">No investigation run yet. Select a case and click "Run agent investigation" to see live reasoning.</div>`;
+                    return;
+                }
+                let html = '';
+                logEntries.forEach((e, i) => {
+                    const agentClass = e.agent === 'InvestigatorAgent' ? 'investigator' :
+                        e.agent === 'AnalyzerAgent' ? 'analyzer' : 'manager';
+                    const dotClass = e.severity === 'flag' ? 'flag' : e.severity === 'decision' ? 'decision' :
+                        'info';
+                    html += `
+                        <div class="audit-entry">
+                            <span class="agent ${agentClass}">${e.agent.replace('Agent','')}</span>
+                            <span class="dot ${dotClass}"></span>
+                            <div class="message">
+                                <span class="action">${e.action}</span>
+                                <span style="color:var(--text-sec)"> — </span>
+                                <span class="text">${e.rationale}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                auditLogEl.innerHTML = html;
+                auditLogEl.scrollTop = auditLogEl.scrollHeight;
+            }
+
+            function renderVerdict() {
+                if (!verdict) return;
+                verdictContainer.style.display = 'block';
+                const v = verdict;
+                const color = decisionColor(v.decision);
+                verdictLabel.textContent = decisionLabel(v.decision);
+                verdictLabel.style.color = color;
+                verdictRisk.textContent = `risk ${v.risk_score.toFixed(3)}`;
+                verdictRisk.style.color = color;
+                verdictStamp.style.borderColor = color;
+                verdictReasoning.textContent = v.reasoning || 'No reasoning provided.';
+                verdictFactors.innerHTML = '';
+                (v.top_factors || []).forEach(f => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge';
+                    badge.textContent = f;
+                    verdictFactors.appendChild(badge);
+                });
+                groundTruthEl.style.display = 'none';
+                revealed = false;
+            }
+
+            function revealGroundTruth() {
+                revealed = true;
+                groundTruthEl.style.display = 'block';
+                const correct = (verdict.decision === 'FRAUD_CONFIRMED' && selected.is_fraud) ||
+                    (verdict.decision === 'LEGITIMATE_DISPUTE' && !selected.is_fraud);
+                const color = correct ? '#3FA48B' : '#C1453C';
+                groundTruthEl.innerHTML = `
+                    Ground truth: <span style="color:${selected.is_fraud ? '#C1453C' : '#3FA48B'}">${selected.is_fraud ? 'genuine fraud' : 'legitimate dispute'}</span>
+                    · agent <span style="color:${color}">${correct ? 'correct' : 'incorrect'}</span>
+                `;
+            }
+
+            // ------------------------------------------------------------------
+            // AGENT SIMULATION (no API call, uses deterministic logic)
+            // ------------------------------------------------------------------
+            function runInvestigation() {
+                if (status === 'running') return;
+                status = 'running';
+                logEntries = [];
+                verdict = null;
+                revealed = false;
+                errorMsgEl.style.display = 'none';
+                verdictContainer.style.display = 'none';
+                updateButtons();
+                updateAuditLog();
+
+                // Simulate async steps
+                setTimeout(() => {
+                    try {
+                        // Step 1: Open case
+                        logEntries.push({
+                            agent: 'CaseManager',
+                            action: 'open_case',
+                            severity: 'info',
+                            rationale: `Dispute received for ${selected.case_id} (${selected.merchant_category}, ₹${selected.amount_inr.toFixed(2)}). Routing to InvestigatorAgent.`
+                        });
+                        updateAuditLog();
+
+                        // Step 2: Run 5 tools
+                        const tools = [
+                            { name: 'check_merchant_velocity', flag: selected.merchant_velocity_1h >= 6,
+                                detail: `${selected.merchant_velocity_1h} txns from this merchant in the surrounding hour (threshold=6).` },
+                            { name: 'check_geo_consistency', flag: selected.geo_mismatch_km >= 150,
+                                detail: `Billing address vs IP-geolocation distance = ${selected.geo_mismatch_km.toFixed(0)} km (threshold=150 km).` },
+                            { name: 'check_device_ip_reputation', flag: selected.new_device && selected.ip_risk_score >=
+                                    0.5,
+                                detail: `new_device=${selected.new_device}, ip_risk_score=${selected.ip_risk_score.toFixed(2)} (flag requires new device AND ip_risk>=0.5).` },
+                            { name: 'check_dispute_history', flag: selected.prior_chargebacks_180d >= 2,
+                                detail: `${selected.prior_chargebacks_180d} prior chargebacks filed by this customer in last 180 days (serial-disputer threshold=2).` },
+                            { name: 'check_behavioural_session', flag: selected.session_to_checkout_min <= 1.0 &&
+                                    selected.saved_card_age_days <= 30,
+                                detail: `session_to_checkout=${selected.session_to_checkout_min.toFixed(2)} min (threshold<=1.0), saved_card_age=${selected.saved_card_age_days.toFixed(0)} days (threshold<=30).` }
+                        ];
+
+                        let flagsRaised = 0;
+                        tools.forEach((tool, idx) => {
+                            setTimeout(() => {
+                                const severity = tool.flag ? 'flag' : 'info';
+                                if (tool.flag) flagsRaised++;
+                                logEntries.push({
+                                    agent: 'InvestigatorAgent',
+                                    action: tool.name,
+                                    severity: severity,
+                                    rationale: tool.detail
+                                });
+                                updateAuditLog();
+                            }, idx * 300);
+                        });
+
+                        // Step 3: Compile dossier
+                        setTimeout(() => {
+                            logEntries.push({
+                                agent: 'InvestigatorAgent',
+                                action: 'compile_dossier',
+                                severity: 'info',
+                                rationale: `Evidence gathering complete. ${flagsRaised}/5 checks flagged.`
+                            });
+                            updateAuditLog();
+                        }, tools.length * 300 + 200);
+
+                        // Step 4: Analyzer
+                        setTimeout(() => {
+                            const t1 = tier1Score(selected);
+                            // Use the same logic as the backend
+                            const risk_score = t1.score;
+                            const decision = t1.decision;
+                            const factors = [];
+                            if (selected.merchant_velocity_1h >= 6) factors.push(
+                            'velocity_flag (+1.35)');
+                            if (selected.geo_mismatch_km >= 150) factors.push('geo_flag (+1.55)');
+                            if (selected.new_device && selected.ip_risk_score >= 0.5) factors.push(
+                                'device_ip_flag (+1.75)');
+                            if (selected.prior_chargebacks_180d >= 2) factors.push('history_flag (-1.60)');
+                            if (selected.session_to_checkout_min <= 1.0 && selected.saved_card_age_days <= 30)
+                                factors.push('behavioural_flag (+1.20)');
+                            if (factors.length === 0) factors.push('no risk flags raised');
+
+                            const reasoning =
+                                `risk_score=${risk_score.toFixed(3)} (logit=${Math.log(risk_score/(1-risk_score)).toFixed(2)}) -> ${decisionLabel(decision)}. Top contributing factors: ${factors.slice(0,3).join(', ')}.`;
+
+                            logEntries.push({
+                                agent: 'AnalyzerAgent',
+                                action: 'score_case',
+                                severity: 'decision',
+                                rationale: reasoning
+                            });
+                            logEntries.push({
+                                agent: 'CaseManager',
+                                action: 'close_case',
+                                severity: 'decision',
+                                rationale: `Case ${selected.case_id} closed with decision=${decisionLabel(decision)}.`
+                            });
+                            updateAuditLog();
+
+                            verdict = {
+                                risk_score: risk_score,
+                                decision: decision,
+                                reasoning: reasoning,
+                                top_factors: factors.slice(0, 3)
+                            };
+                            status = 'done';
+                            updateButtons();
+                            renderVerdict();
+                        }, tools.length * 300 + 600);
+
+                    } catch (err) {
+                        errorMsgEl.textContent = err.message || 'An error occurred during investigation.';
+                        errorMsgEl.style.display = 'block';
+                        status = 'idle';
+                        updateButtons();
+                    }
+                }, 300);
+            }
+
+            // ------------------------------------------------------------------
+            // TAB SWITCHING
+            // ------------------------------------------------------------------
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    const tabName = this.dataset.tab;
+                    document.querySelectorAll('[id^="tab-"]').forEach(el => el.style.display = 'none');
+                    document.getElementById(`tab-${tabName}`).style.display = 'block';
+                });
+            });
+
+            // ------------------------------------------------------------------
+            // EVENT LISTENERS
+            // ------------------------------------------------------------------
+            runBtn.addEventListener('click', runInvestigation);
+            revealBtn.addEventListener('click', revealGroundTruth);
+
+            // Video link placeholder
+            videoLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('Add your YouTube video link here! Replace the href in the <a> tag with your actual video URL.');
+            });
+
+            // ------------------------------------------------------------------
+            // INIT
+            // ------------------------------------------------------------------
+            renderCaseList();
+            selectCase(selectedId);
+            updateSelectedInfo();
+            updateTier1();
+            updateButtons();
+            updateAuditLog();
+
+        })();
+    </script>
 </body>
 </html>
