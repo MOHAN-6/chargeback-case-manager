@@ -207,6 +207,9 @@
         .audit-entry .agent.analyzer {
             color: #D9861F;
         }
+        .audit-entry .agent.autoresponder {
+            color: #C9A227;
+        }
         .audit-entry .agent.manager {
             color: #5C6376;
         }
@@ -458,6 +461,7 @@
             <span class="badge">🧠 Track 02 — AI Risk Manager</span>
             <span class="badge badge-secondary">⚡ Razorpay Buildathon</span>
             <span class="badge badge-secondary">🛡️ Defense-Only</span>
+            <span class="badge badge-secondary">📄 Auto-Responder</span>
         </div>
 
         <!-- FUNNEL -->
@@ -657,7 +661,7 @@
             if(logEntries.length===0){auditLogEl.innerHTML='<div class="audit-empty">No investigation run yet. Select a case and click "Run agent investigation" to see live reasoning.</div>'; return;}
             let html='';
             logEntries.forEach(e=>{
-                const ac=e.agent==='InvestigatorAgent'?'investigator':e.agent==='AnalyzerAgent'?'analyzer':'manager';
+                const ac=e.agent==='InvestigatorAgent'?'investigator':e.agent==='AnalyzerAgent'?'analyzer':e.agent==='AutoResponder'?'autoresponder':'manager';
                 const dc=e.severity==='flag'?'flag':e.severity==='decision'?'decision':'info';
                 html+=`<div class="audit-entry"><span class="agent ${ac}">${e.agent.replace('Agent','')}</span><span class="dot ${dc}"></span><div class="message"><span class="action">${e.action}</span><span style="color:#9098AC;"> — </span><span class="text">${e.rationale}</span></div></div>`;
             });
@@ -683,42 +687,135 @@
             groundTruthEl.innerHTML=`Ground truth: <span style="color:${selected.is_fraud?'#C1453C':'#3FA48B'}">${selected.is_fraud?'genuine fraud':'legitimate dispute'}</span> · agent <span style="color:${correct?'#3FA48B':'#C1453C'}">${correct?'correct':'incorrect'}</span>`;
         }
 
-        function runInvestigation(){
-            if(status==='running')return;
-            status='running'; logEntries=[]; verdict=null; revealed=false; errorMsgEl.style.display='none'; verdictContainer.style.display='none';
-            updateBtn(); updateAudit();
-            setTimeout(()=>{
-                try{
-                    logEntries.push({agent:'CaseManager',action:'open_case',severity:'info',rationale:`Dispute received for ${selected.case_id} (${selected.merchant_category}, ₹${selected.amount_inr.toFixed(2)}). Routing to InvestigatorAgent.`});
+        // --- UPDATED WITH AUTO-RESPONDER ---
+        function runInvestigation() {
+            if (status === 'running') return;
+            status = 'running';
+            logEntries = [];
+            verdict = null;
+            revealed = false;
+            errorMsgEl.style.display = 'none';
+            verdictContainer.style.display = 'none';
+            updateBtn();
+            updateAudit();
+
+            setTimeout(() => {
+                try {
+                    logEntries.push({
+                        agent: 'CaseManager',
+                        action: 'open_case',
+                        severity: 'info',
+                        rationale: `Dispute received for ${selected.case_id} (${selected.merchant_category}, ₹${selected.amount_inr.toFixed(2)}). Routing to InvestigatorAgent.`
+                    });
                     updateAudit();
-                    const tools=[
-                        {name:'check_merchant_velocity',flag:selected.merchant_velocity_1h>=6,detail:`${selected.merchant_velocity_1h} txns from this merchant (threshold=6).`},
-                        {name:'check_geo_consistency',flag:selected.geo_mismatch_km>=150,detail:`Distance ${selected.geo_mismatch_km.toFixed(0)} km (threshold=150 km).`},
-                        {name:'check_device_ip_reputation',flag:selected.new_device&&selected.ip_risk_score>=0.5,detail:`new_device=${selected.new_device}, ip_risk=${selected.ip_risk_score.toFixed(2)}.`},
-                        {name:'check_dispute_history',flag:selected.prior_chargebacks_180d>=2,detail:`${selected.prior_chargebacks_180d} prior chargebacks.`},
-                        {name:'check_behavioural_session',flag:selected.session_to_checkout_min<=1.0&&selected.saved_card_age_days<=30,detail:`session=${selected.session_to_checkout_min.toFixed(2)}min, card_age=${selected.saved_card_age_days.toFixed(0)}d.`}
+
+                    const tools = [
+                        { name: 'check_merchant_velocity', flag: selected.merchant_velocity_1h >= 6, detail: `${selected.merchant_velocity_1h} txns from this merchant (threshold=6).` },
+                        { name: 'check_geo_consistency', flag: selected.geo_mismatch_km >= 150, detail: `Distance ${selected.geo_mismatch_km.toFixed(0)} km (threshold=150 km).` },
+                        { name: 'check_device_ip_reputation', flag: selected.new_device && selected.ip_risk_score >= 0.5, detail: `new_device=${selected.new_device}, ip_risk=${selected.ip_risk_score.toFixed(2)}.` },
+                        { name: 'check_dispute_history', flag: selected.prior_chargebacks_180d >= 2, detail: `${selected.prior_chargebacks_180d} prior chargebacks.` },
+                        { name: 'check_behavioural_session', flag: selected.session_to_checkout_min <= 1.0 && selected.saved_card_age_days <= 30, detail: `session=${selected.session_to_checkout_min.toFixed(2)}min, card_age=${selected.saved_card_age_days.toFixed(0)}d.` }
                     ];
-                    let flags=0;
-                    tools.forEach((t,i)=>setTimeout(()=>{if(t.flag)flags++; logEntries.push({agent:'InvestigatorAgent',action:t.name,severity:t.flag?'flag':'info',rationale:t.detail}); updateAudit();},i*300));
-                    setTimeout(()=>{logEntries.push({agent:'InvestigatorAgent',action:'compile_dossier',severity:'info',rationale:`Evidence complete. ${flags}/5 checks flagged.`}); updateAudit();},tools.length*300+200);
-                    setTimeout(()=>{
-                        const t1=tier1Score(selected);
-                        const factors=[];
-                        if(selected.merchant_velocity_1h>=6) factors.push('velocity_flag (+1.35)');
-                        if(selected.geo_mismatch_km>=150) factors.push('geo_flag (+1.55)');
-                        if(selected.new_device&&selected.ip_risk_score>=0.5) factors.push('device_ip_flag (+1.75)');
-                        if(selected.prior_chargebacks_180d>=2) factors.push('history_flag (-1.60)');
-                        if(selected.session_to_checkout_min<=1.0&&selected.saved_card_age_days<=30) factors.push('behavioural_flag (+1.20)');
-                        if(factors.length===0) factors.push('no risk flags raised');
-                        const reasoning=`risk_score=${t1.score.toFixed(3)} -> ${decisionLabel(t1.decision)}. Top factors: ${factors.slice(0,3).join(', ')}.`;
-                        logEntries.push({agent:'AnalyzerAgent',action:'score_case',severity:'decision',rationale:reasoning});
-                        logEntries.push({agent:'CaseManager',action:'close_case',severity:'decision',rationale:`Case ${selected.case_id} closed with decision=${decisionLabel(t1.decision)}.`});
+
+                    let flags = 0;
+                    tools.forEach((t, i) => {
+                        setTimeout(() => {
+                            if (t.flag) flags++;
+                            logEntries.push({
+                                agent: 'InvestigatorAgent',
+                                action: t.name,
+                                severity: t.flag ? 'flag' : 'info',
+                                rationale: t.detail
+                            });
+                            updateAudit();
+                        }, i * 300);
+                    });
+
+                    setTimeout(() => {
+                        logEntries.push({
+                            agent: 'InvestigatorAgent',
+                            action: 'compile_dossier',
+                            severity: 'info',
+                            rationale: `Evidence complete. ${flags}/5 checks flagged.`
+                        });
                         updateAudit();
-                        verdict={risk_score:t1.score,decision:t1.decision,reasoning:reasoning,top_factors:factors.slice(0,3)};
-                        status='done'; updateBtn(); renderVerdict();
-                    },tools.length*300+600);
-                }catch(err){errorMsgEl.textContent=err.message||'Error.'; errorMsgEl.style.display='block'; status='idle'; updateBtn();}
-            },300);
+                    }, tools.length * 300 + 200);
+
+                    setTimeout(() => {
+                        const t1 = tier1Score(selected);
+                        const factors = [];
+                        if (selected.merchant_velocity_1h >= 6) factors.push('velocity_flag (+1.35)');
+                        if (selected.geo_mismatch_km >= 150) factors.push('geo_flag (+1.55)');
+                        if (selected.new_device && selected.ip_risk_score >= 0.5) factors.push('device_ip_flag (+1.75)');
+                        if (selected.prior_chargebacks_180d >= 2) factors.push('history_flag (-1.60)');
+                        if (selected.session_to_checkout_min <= 1.0 && selected.saved_card_age_days <= 30) factors.push('behavioural_flag (+1.20)');
+                        if (factors.length === 0) factors.push('no risk flags raised');
+
+                        const reasoning = `risk_score=${t1.score.toFixed(3)} -> ${decisionLabel(t1.decision)}. Top factors: ${factors.slice(0, 3).join(', ')}.`;
+                        logEntries.push({
+                            agent: 'AnalyzerAgent',
+                            action: 'score_case',
+                            severity: 'decision',
+                            rationale: reasoning
+                        });
+
+                        verdict = {
+                            risk_score: t1.score,
+                            decision: t1.decision,
+                            reasoning: reasoning,
+                            top_factors: factors.slice(0, 3)
+                        };
+
+                        // --- AUTO-RESPONDER ---
+                        if (verdict.decision === "FRAUD_CONFIRMED") {
+                            logEntries.push({
+                                agent: 'AutoResponder',
+                                action: 'draft_response',
+                                severity: 'decision',
+                                rationale: `📄 Drafting evidence packet for acquiring bank: Case ${selected.case_id} flagged as fraud. Top factors: ${factors.slice(0,3).join(', ')}.`
+                            });
+                            logEntries.push({
+                                agent: 'AutoResponder',
+                                action: 'generate_document',
+                                severity: 'info',
+                                rationale: `📎 Generated: dispute_${selected.case_id}_evidence.pdf (simulated). Packet ready for submission.`
+                            });
+                        } else if (verdict.decision === "LEGITIMATE_DISPUTE") {
+                            logEntries.push({
+                                agent: 'AutoResponder',
+                                action: 'skip_response',
+                                severity: 'info',
+                                rationale: `✅ No auto-response generated. Case ${selected.case_id} deemed legitimate.`
+                            });
+                        } else {
+                            logEntries.push({
+                                agent: 'AutoResponder',
+                                action: 'manual_review_needed',
+                                severity: 'flag',
+                                rationale: `⚠️ Case ${selected.case_id} escalated to human review. Auto-responder paused.`
+                            });
+                        }
+
+                        logEntries.push({
+                            agent: 'CaseManager',
+                            action: 'close_case',
+                            severity: 'decision',
+                            rationale: `Case ${selected.case_id} closed with decision=${decisionLabel(t1.decision)}.`
+                        });
+                        updateAudit();
+
+                        status = 'done';
+                        updateBtn();
+                        renderVerdict();
+                    }, tools.length * 300 + 600);
+
+                } catch (err) {
+                    errorMsgEl.textContent = err.message || 'Error.';
+                    errorMsgEl.style.display = 'block';
+                    status = 'idle';
+                    updateBtn();
+                }
+            }, 300);
         }
 
         document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',function(){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); this.classList.add('active'); const tn=this.dataset.tab; document.querySelectorAll('[id^="tab-"]').forEach(el=>el.style.display='none'); document.getElementById(`tab-${tn}`).style.display='block';}));
